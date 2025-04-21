@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Call Waiting and Voicemail System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+  />
+  <style>
+    /* Add subtle pulse animation for incoming call */
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+      }
+      50% {
+        box-shadow: 0 0 10px 10px rgba(34, 197, 94, 0);
+      }
+    }
+    #incoming-call.pulsing {
+      animation: pulse 2s infinite;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-4">
+  <h1 class="text-3xl font-bold mb-6 flex items-center space-x-3">
+    <i class="fas fa-phone-alt text-blue-600 animate-bounce"></i>
+    <span>Call Waiting and Voicemail System</span>
+  </h1>
+
+  <div
+    id="incoming-call"
+    class="w-full max-w-md bg-white rounded shadow p-4 mb-6 hidden flex-col items-center"
+  >
+    <p class="text-xl mb-4 flex items-center space-x-2" id="caller-info">
+      <i class="fas fa-user-circle text-2xl text-green-600"></i>
+      <span>Incoming call from ...</span>
+    </p>
+    <div class="flex space-x-4">
+      <button
+        id="accept-call"
+        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex items-center space-x-2 transition duration-300"
+        title="Accept the incoming call"
+      >
+        <i class="fas fa-phone"></i><span>Accept Call</span>
+      </button>
+      <button
+        id="reject-call"
+        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded flex items-center space-x-2 transition duration-300"
+        title="Reject the incoming call"
+      >
+        <i class="fas fa-phone-slash"></i><span>Reject Call</span>
+      </button>
+    </div>
+  </div>
+
+  <div
+    id="missed-calls-voicemails"
+    class="w-full max-w-md bg-white rounded shadow p-4 mb-6"
+  >
+    <h2 class="text-2xl font-semibold mb-4 flex items-center space-x-2">
+      <i class="fas fa-list-ul text-gray-700"></i>
+      <span>Missed Calls and Voicemails</span>
+    </h2>
+    <ul id="log-list" class="space-y-2 max-h-64 overflow-y-auto"></ul>
+    <button
+      id="clear-logs"
+      class="mt-4 bg-gray-300 hover:bg-gray-400 px-3 py-1 rounded transition duration-300 flex items-center space-x-2"
+      title="Clear all missed calls and voicemails"
+    >
+      <i class="fas fa-trash-alt"></i><span>Clear Logs</span>
+    </button>
+  </div>
+
+  <div class="w-full max-w-md flex justify-center space-x-4">
+    <button
+      id="play-voicemail"
+      class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center space-x-2 disabled:opacity-50 transition duration-300"
+      disabled
+      title="Play the last voicemail message"
+    >
+      <i class="fas fa-play"></i><span>Play Last Voicemail</span>
+    </button>
+    <button
+      id="show-all-voicemails"
+      class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded flex items-center space-x-2 disabled:opacity-50 transition duration-300"
+      disabled
+      title="Show all voicemails"
+    >
+      <i class="fas fa-envelope-open-text"></i><span>Show All Voicemails</span>
+    </button>
+  </div>
+
+  <!-- Modal for voicemail input -->
+  <div
+    id="voicemail-modal"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+  >
+    <div class="bg-white rounded p-6 w-full max-w-md shadow-lg">
+      <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+        <i class="fas fa-microphone-alt text-red-600 animate-pulse"></i>
+        <span>Leave a Voicemail</span>
+      </h3>
+      <textarea
+        id="voicemail-text"
+        rows="5"
+        class="w-full border border-gray-300 rounded p-2 mb-4 resize-none"
+        placeholder="Type your voicemail message here..."
+      ></textarea>
+      <div class="flex justify-end space-x-4">
+        <button
+          id="cancel-voicemail"
+          class="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded transition duration-300"
+        >
+          Cancel
+        </button>
+        <button
+          id="save-voicemail"
+          class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-300"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for showing all voicemails -->
+  <div
+    id="all-voicemails-modal"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+  >
+    <div class="bg-white rounded p-6 w-full max-w-lg shadow-lg max-h-[80vh] overflow-y-auto">
+      <h3 class="text-xl font-semibold mb-4 flex items-center space-x-2">
+        <i class="fas fa-inbox text-blue-600"></i>
+        <span>All Voicemails</span>
+      </h3>
+      <ul id="all-voicemails-list" class="space-y-4"></ul>
+      <div class="flex justify-end mt-4">
+        <button
+          id="close-all-voicemails"
+          class="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded transition duration-300"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const callers = ["Alice", "Bob", "Charlie", "Diana", "Eve"];
+    let callActive = false;
+    let currentCaller = null;
+    let missedCalls = [];
+    let voicemails = [];
+
+    const incomingCallDiv = document.getElementById("incoming-call");
+    const callerInfo = document.getElementById("caller-info");
+    const acceptCallBtn = document.getElementById("accept-call");
+    const rejectCallBtn = document.getElementById("reject-call");
+    const logList = document.getElementById("log-list");
+    const clearLogsBtn = document.getElementById("clear-logs");
+    const playVoicemailBtn = document.getElementById("play-voicemail");
+    const showAllVoicemailsBtn = document.getElementById("show-all-voicemails");
+    const voicemailModal = document.getElementById("voicemail-modal");
+    const voicemailText = document.getElementById("voicemail-text");
+    const cancelVoicemailBtn = document.getElementById("cancel-voicemail");
+    const saveVoicemailBtn = document.getElementById("save-voicemail");
+    const allVoicemailsModal = document.getElementById("all-voicemails-modal");
+    const allVoicemailsList = document.getElementById("all-voicemails-list");
+    const closeAllVoicemailsBtn = document.getElementById("close-all-voicemails");
+
+    function logMessage(message) {
+      const li = document.createElement("li");
+      li.textContent = message;
+      li.className = "bg-gray-100 p-2 rounded shadow flex items-center space-x-2";
+      const icon = document.createElement("i");
+      icon.className = "fas fa-info-circle text-gray-500";
+      li.prepend(icon);
+      logList.appendChild(li);
+      logList.scrollTop = logList.scrollHeight;
+    }
+
+    function updateIncomingCallUI() {
+      if (callActive && currentCaller) {
+        incomingCallDiv.classList.add("pulsing");
+        callerInfo.innerHTML = '<i class="fas fa-user-circle text-2xl text-green-600"></i> <span>Incoming call from ' + currentCaller + '</span>';
+        incomingCallDiv.classList.remove("hidden");
+      } else {
+        incomingCallDiv.classList.remove("pulsing");
+        incomingCallDiv.classList.add("hidden");
+      }
+    }
+
+    function simulateCall() {
+      if (!callActive) {
+        currentCaller = callers[Math.floor(Math.random() * callers.length)];
+        callActive = true;
+        updateIncomingCallUI();
+
+        // Wait 20 seconds for user to respond
+        let waitTime = 20;
+        const intervalId = setInterval(() => {
+          waitTime--;
+          if (!callActive || waitTime <= 0) {
+            clearInterval(intervalId);
+            if (callActive) {
+              // Missed call
+              const timestamp = new Date();
+              missedCalls.push({ caller: currentCaller, timestamp });
+              logMessage('Missed call from ' + currentCaller + ' at ' + timestamp.toLocaleString());
+              callActive = false;
+              currentCaller = null;
+              updateIncomingCallUI();
+            }
+          }
+        }, 1000);
+      }
+    }
+
+    acceptCallBtn.addEventListener("click", () => {
+      if (callActive) {
+        alert('You accepted the call from ' + currentCaller + '.');
+        callActive = false;
+        currentCaller = null;
+        updateIncomingCallUI();
+      }
+    });
+
+    rejectCallBtn.addEventListener("click", () => {
+      if (callActive) {
+        callActive = false;
+        const caller = currentCaller;
+        currentCaller = null;
+        updateIncomingCallUI();
+        const timestamp = new Date();
+        missedCalls.push({ caller, timestamp });
+        logMessage('Missed call from ' + caller + ' at ' + timestamp.toLocaleString());
+        // Ask to leave voicemail
+        voicemailText.value = "";
+        voicemailModal.classList.remove("hidden");
+        voicemailModal.dataset.caller = caller;
+      }
+    });
+
+    cancelVoicemailBtn.addEventListener("click", () => {
+      voicemailModal.classList.add("hidden");
+    });
+
+    saveVoicemailBtn.addEventListener("click", () => {
+      const message = voicemailText.value.trim();
+      if (message.length === 0) {
+        alert("Please enter a voicemail message or cancel.");
+        return;
+      }
+      const caller = voicemailModal.dataset.caller;
+      const timestamp = new Date();
+      voicemails.push({ caller, message, timestamp });
+      logMessage('Voicemail recorded for ' + caller + ' at ' + timestamp.toLocaleString());
+      voicemailModal.classList.add("hidden");
+      playVoicemailBtn.disabled = false;
+      showAllVoicemailsBtn.disabled = false;
+    });
+
+    playVoicemailBtn.addEventListener("click", () => {
+      if (voicemails.length === 0) {
+        alert("No voicemails to play.");
+        return;
+      }
+      const lastVoicemail = voicemails[voicemails.length - 1];
+      alert(
+        'Voicemail from ' + lastVoicemail.caller + ' recorded at ' + lastVoicemail.timestamp.toLocaleString() + ':\n\n' + lastVoicemail.message
+      );
+    });
+
+    showAllVoicemailsBtn.addEventListener("click", () => {
+      allVoicemailsList.innerHTML = "";
+      if (voicemails.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "No voicemails available.";
+        li.className = "text-gray-500";
+        allVoicemailsList.appendChild(li);
+      } else {
+        voicemails.forEach(({ caller, message, timestamp }) => {
+          const li = document.createElement("li");
+          li.className = "border border-gray-300 rounded p-3 shadow bg-gray-50";
+          li.innerHTML = 
+            '<p class="font-semibold">' + caller + ' <span class="text-sm text-gray-500">(' + timestamp.toLocaleString() + ')</span></p>' +
+            '<p class="mt-1 whitespace-pre-wrap">' + message + '</p>';
+          allVoicemailsList.appendChild(li);
+        });
+      }
+      allVoicemailsModal.classList.remove("hidden");
+    });
+
+    closeAllVoicemailsBtn.addEventListener("click", () => {
+      allVoicemailsModal.classList.add("hidden");
+    });
+
+    clearLogsBtn.addEventListener("click", () => {
+      missedCalls = [];
+      voicemails = [];
+      logList.innerHTML = "";
+      playVoicemailBtn.disabled = true;
+      showAllVoicemailsBtn.disabled = true;
+    });
+
+    // Simulate calls every 15 seconds
+    setInterval(simulateCall, 15000);
+
+    // Initial call simulation
+    simulateCall();
+  </script>
+</body>
+</html>
